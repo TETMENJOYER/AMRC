@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "kind": "block_cutting_problem",
+  "block": {
+    "schema_version": 1,
+    "units": "mm",
+    "name": "homogeneous_nonconvex_block",
+    "seed": 20261009,
+    "base": {
+      "type": "prism",
+      "height": 450,
+      "top_shift": [
+        44.45805374368125,
+        -10.85764745647062
+      ],
+      "vertices": [
+        [
+          0,
+          100
+        ],
+        [
+          200,
+          0
+        ],
+        [
+          1000,
+          0
+        ],
+        [
+          850,
+          400
+        ],
+        [
+          1100,
+          700
+        ],
+        [
+          550,
+          850
+        ],
+        [
+          0,
+          650
+        ]
+      ]
+    }
+  },
+  "product": {
+    "short_side": 100,
+    "aspect_ratio": 3,
+    "kerf": 0,
+    "allowance": 0,
+    "thickness": 30
+  },
+  "cut_policy": {
+    "kind": "parallel_support_start",
+    "initial_trim_allowed": false,
+    "kerf": 0
+  }
+}

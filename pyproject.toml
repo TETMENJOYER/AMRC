@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rockcut"
+version = "0.1.0"
+description = "Hybrid tabu and gradient packing of identical rectangles in polygonal slabs"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "shapely>=2.1", "torch>=2.2", "matplotlib>=3.8"]
+
+[project.optional-dependencies]
+geometry3d = ["manifold3d>=3.5,<4", "trimesh>=4.12,<5"]
+
+[project.scripts]
+rockcut = "rockcut.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["rockcut*"]

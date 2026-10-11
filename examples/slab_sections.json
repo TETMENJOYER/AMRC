@@ -1,0 +1,28 @@
+{
+  "name": "three_different_sections_7_6_7",
+  "units": "mm",
+  "short_side": 100,
+  "aspect_ratio": 3,
+  "kerf": 0,
+  "allowance": 0,
+  "touching_allowed": true,
+  "coordinate_system": "shared_xy",
+  "between_sections": "unknown",
+  "sections": [
+    {
+      "name": "lower",
+      "z": 0,
+      "vertices": [[0,100],[200,0],[1000,0],[1200,250],[1100,700],[550,850],[0,650]]
+    },
+    {
+      "name": "middle",
+      "z": 15,
+      "vertices": [[80,80],[900,20],[1180,300],[1050,760],[300,800],[20,450]]
+    },
+    {
+      "name": "upper",
+      "z": 30,
+      "vertices": [[130,0],[950,70],[1150,250],[1080,650],[650,820],[100,720],[-30,350]]
+    }
+  ]
+}

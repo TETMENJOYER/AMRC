@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "kind": "geometry_trials",
+  "block": {
+    "schema_version": 1,
+    "units": "mm",
+    "name": "homogeneous_nonconvex_block",
+    "seed": 20261009,
+    "base": {
+      "type": "prism",
+      "height": 450,
+      "top_shift": [
+        44.45805374368125,
+        -10.85764745647062
+      ],
+      "vertices": [
+        [
+          0,
+          100
+        ],
+        [
+          200,
+          0
+        ],
+        [
+          1000,
+          0
+        ],
+        [
+          850,
+          400
+        ],
+        [
+          1100,
+          700
+        ],
+        [
+          550,
+          850
+        ],
+        [
+          0,
+          650
+        ]
+      ]
+    }
+  },
+  "slab": {
+    "frame": {
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ]
+    },
+    "lower": 200,
+    "upper": 230
+  },
+  "product": {
+    "short_side": 100,
+    "aspect_ratio": 3,
+    "kerf": 0,
+    "allowance": 0
+  },
+  "angle_unit": "radians",
+  "trials": [
+    {
+      "name": "valid_lower",
+      "state": [
+        300,
+        250,
+        0
+      ],
+      "expected_accepted": true
+    },
+    {
+      "name": "valid_rotated",
+      "state": [
+        700,
+        300,
+        0.3490658503988659
+      ],
+      "expected_accepted": true
+    },
+    {
+      "name": "valid_left",
+      "state": [
+        400,
+        450,
+        0
+      ],
+      "expected_accepted": true
+    },
+    {
+      "name": "crosses_concave_boundary",
+      "state": [
+        975,
+        450,
+        0
+      ],
+      "expected_accepted": false
+    },
+    {
+      "name": "valid_upper",
+      "state": [
+        650,
+        650,
+        0
+      ],
+      "expected_accepted": true
+    },
+    {
+      "name": "outside_outer_surface",
+      "state": [
+        80,
+        350,
+        0
+      ],
+      "expected_accepted": false
+    }
+  ]
+}

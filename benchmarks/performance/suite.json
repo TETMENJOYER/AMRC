@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "dtype": "float64",
+  "cases": [
+    {
+      "id": "granite_slab_3",
+      "path": "cases/granite_slab_3.json",
+      "sha256": "b662f418cc91bae8be11b1dd134d1add231a1ecf51e3e31da02d946d732a254e",
+      "reference_n": 22,
+      "n": 22,
+      "boundary_edges": 36,
+      "forbidden_triangles": 425,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "granite_slab_6",
+      "path": "cases/granite_slab_6.json",
+      "sha256": "4e47cb74344b8418a20674e2041e946b122d61d9a16e454ffa8621f61eaf5149",
+      "reference_n": 23,
+      "n": 23,
+      "boundary_edges": 34,
+      "forbidden_triangles": 479,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "granite_slab_14",
+      "path": "cases/granite_slab_14.json",
+      "sha256": "df5512eb518a2f851d89edb5f47078b206096da711026ecfb071171aecd29e05",
+      "reference_n": 24,
+      "n": 24,
+      "boundary_edges": 26,
+      "forbidden_triangles": 451,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "granite_slab_20",
+      "path": "cases/granite_slab_20.json",
+      "sha256": "472137c0ee0bcfca8028608bafe7342d707fe275dca1ea05213b2ab1110f9a5f",
+      "reference_n": 23,
+      "n": 23,
+      "boundary_edges": 42,
+      "forbidden_triangles": 479,
+      "is_convex": false,
+      "region_components": 3
+    },
+    {
+      "id": "granite_slab_22",
+      "path": "cases/granite_slab_22.json",
+      "sha256": "041a21b3d1ee5066b64cb0df2ff0d5d064165cb80ac6494f4334d93f0adb37e7",
+      "reference_n": 17,
+      "n": 17,
+      "boundary_edges": 57,
+      "forbidden_triangles": 626,
+      "is_convex": false,
+      "region_components": 10
+    },
+    {
+      "id": "L_100",
+      "path": "cases/L_100.json",
+      "sha256": "4f01f1d449dc79b908cde48d0c77ed47549eca95551782d74b889a141817eda3",
+      "reference_n": 14,
+      "n": 14,
+      "boundary_edges": 5,
+      "forbidden_triangles": 2,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "L_50",
+      "path": "cases/L_50.json",
+      "sha256": "512fefaf62e3322628401ec6a3146616c486d50faeda6b5df2c8ca28b54a2a89",
+      "reference_n": 72,
+      "n": 72,
+      "boundary_edges": 5,
+      "forbidden_triangles": 2,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "L_25",
+      "path": "cases/L_25.json",
+      "sha256": "f5c2c85aef496a50a8855461f01e127e5c27efafed2462463953a1f7471d2cad",
+      "reference_n": 323,
+      "n": 323,
+      "boundary_edges": 5,
+      "forbidden_triangles": 2,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "irregular_7",
+      "path": "cases/irregular_7.json",
+      "sha256": "f7e0b6ba89048e460fbc97b84e437ac8be2ba37d72e3d7c41e60a674f4574414",
+      "reference_n": 17,
+      "n": 17,
+      "boundary_edges": 6,
+      "forbidden_triangles": 1,
+      "is_convex": false,
+      "region_components": 1
+    },
+    {
+      "id": "split_slab",
+      "path": "cases/split_slab.json",
+      "sha256": "bdd4932a1e0e837aa812a2a4ba7403cd4fd9beb000726cabd805d1d254c0c6f9",
+      "reference_n": 16,
+      "n": 16,
+      "boundary_edges": 4,
+      "forbidden_triangles": 2,
+      "is_convex": false,
+      "region_components": 2
+    },
+    {
+      "id": "narrow_tongue",
+      "path": "cases/narrow_tongue.json",
+      "sha256": "8f3a9d4f6ec013d969ccc9b3a591b438e08235dc6b80e23a88f8ff58d827648a",
+      "reference_n": 29,
+      "n": 29,
+      "boundary_edges": 5,
+      "forbidden_triangles": 1,
+      "is_convex": false,
+      "region_components": 1
+    }
+  ],
+  "scope": "Portable geometry and feasible reference layouts; counts are not proven maxima.",
+  "shared_reference_sha256": "4c8fa342833a94c0dddab72a756150f0d7adfaabca9c31371b81d59bb4623075"
+}

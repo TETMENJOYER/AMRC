@@ -1,0 +1,11 @@
+{
+  "name": "convex_slab_1200mm",
+  "units": "mm",
+  "vertices": [[0, 0], [1200, 0], [1000, 800], [0, 700]],
+  "short_side": 100,
+  "aspect_ratio": 3,
+  "kerf": 0,
+  "allowance": 0,
+  "touching_allowed": true
+}
+
