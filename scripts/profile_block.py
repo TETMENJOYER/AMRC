@@ -23,7 +23,7 @@ def main():
     parser.add_argument('--seconds', type=float)
     args = parser.parse_args()
     reference = json.loads(args.reference.read_text(encoding='utf-8-sig'))
-    config = BlockSearchConfig(**reference['config'])
+    config = BlockSearchConfig(**dict(reference['config'], grid_seed='off'))
     config.device = 'cpu'
     if args.seconds is not None:
         config.seconds = args.seconds

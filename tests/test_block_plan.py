@@ -34,7 +34,7 @@ class BlockPlanTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         torch.set_num_threads(1)
-        cls.result=solve_block(cube_input(),BlockSearchConfig(seconds=4,refine_pairs=0,
+        cls.result=solve_block(cube_input(),BlockSearchConfig(grid_seed='off', seconds=4,refine_pairs=0,
                               coarse_seconds_per_slab=.2,fine_seconds_per_slab=.2))
 
     def test_sequence_has_nominal_thickness_and_volume_balance(self):
@@ -87,7 +87,7 @@ class BlockPlanTests(unittest.TestCase):
         source['product']['thickness']=8
         source['block']['base']={'type':'prism','vertices':[[0,0],[10,0],[10,10],[0,10]],
                                  'height':10,'top_shift':[30,0]}
-        r=solve_block(source,BlockSearchConfig(seconds=2,refine_pairs=0))
+        r=solve_block(source,BlockSearchConfig(grid_seed='off', seconds=2,refine_pairs=0))
         self.assertEqual(r['n_total'],0)
         self.assertEqual(len(r['slabs']),1)
         self.assertTrue(r['validation']['accepted'])
@@ -95,7 +95,7 @@ class BlockPlanTests(unittest.TestCase):
         self.assertAlmostEqual(r['volume_balance']['final_remainder_mm3'],200)
 
     def test_thinner_than_one_slab_returns_whole_block_as_remainder(self):
-        r=solve_block(cube_input(2),BlockSearchConfig(seconds=1,refine_pairs=0))
+        r=solve_block(cube_input(2),BlockSearchConfig(grid_seed='off', seconds=1,refine_pairs=0))
         self.assertEqual(r['n_total'],0)
         self.assertEqual(len(r['slabs']),0)
         self.assertAlmostEqual(r['volume_balance']['final_remainder_mm3'],24)
@@ -103,12 +103,12 @@ class BlockPlanTests(unittest.TestCase):
 
     def test_direction_selected_by_total_products_not_one_section(self):
         source=cube_input();source['directions']=[[0,1,0],[0,0,1]]
-        r=solve_block(source,BlockSearchConfig(seconds=4,refine_pairs=0,coarse_seconds_per_slab=.2))
+        r=solve_block(source,BlockSearchConfig(grid_seed='off', seconds=4,refine_pairs=0,coarse_seconds_per_slab=.2))
         self.assertEqual(r['n_total'],8)
         np.testing.assert_allclose(r['plan']['normal'],[0,0,1])
 
     def test_tiny_budget_retains_complete_plan_and_balance(self):
-        r=solve_block(cube_input(),BlockSearchConfig(seconds=.00001,refine_pairs=0))
+        r=solve_block(cube_input(),BlockSearchConfig(grid_seed='off', seconds=.00001,refine_pairs=0))
         self.assertEqual(len(r['slabs']),2)
         self.assertTrue(r['validation']['accepted'])
         self.assertLessEqual(r['n_total'],8)
@@ -151,7 +151,7 @@ class BlockPlanTests(unittest.TestCase):
 
     def test_configuration_and_unagreed_production_options_rejected(self):
         for kw in ({'seconds':0},{'direction_count':0},{'refine_pairs':-1},{'variant':'unknown'}):
-            with self.assertRaises(ValueError):BlockSearchConfig(**kw)
+            with self.assertRaises(ValueError):BlockSearchConfig(grid_seed='off', **kw)
         for field in ('kerf','allowance','thickness'):
             source=cube_input();source['product'][field]=-1
             with self.assertRaises(ValueError):block_inputs(source)
@@ -165,11 +165,11 @@ class BlockPlanTests(unittest.TestCase):
     def test_verified_warm_start_is_retained_and_invalid_one_is_not_accepted(self):
         p=Problem([[0,0],[6,0],[6,2],[0,2]],1)
         valid=np.array([[1.5,.5,0],[4.5,.5,0],[1.5,1.5,0],[4.5,1.5,0]])
-        r=solve(p,SearchConfig(seconds=.1),initial_state=valid)
+        r=solve(p,SearchConfig(grid_seed='off', seconds=.1),initial_state=valid)
         self.assertEqual(r['n'],4)
         self.assertTrue(any(e.get('source')=='verified_warm_start' for e in r['history']))
         bad=np.tile([1.5,.5,0],(4,1))
-        r=solve(p,SearchConfig(seconds=.1),initial_state=bad)
+        r=solve(p,SearchConfig(grid_seed='off', seconds=.1),initial_state=bad)
         self.assertTrue(any(e.get('event')=='seed_subset' and e.get('retained_n')==1 for e in r['history']))
         self.assertTrue(r['validation']['accepted'])
 
@@ -187,7 +187,7 @@ class BlockPlanTests(unittest.TestCase):
 
     def test_numerically_failed_direction_does_not_destroy_a_valid_complete_plan(self):
         with patch('rockcut.block_solver.Problem.from_region',side_effect=ValueError('numerical contour failure')):
-            r=solve_block(cube_input(),BlockSearchConfig(seconds=1,refine_pairs=0))
+            r=solve_block(cube_input(),BlockSearchConfig(grid_seed='off', seconds=1,refine_pairs=0))
         self.assertEqual(r['n_total'],0)
         self.assertTrue(r['validation']['accepted'])
         self.assertEqual(len(r['slabs']),2)

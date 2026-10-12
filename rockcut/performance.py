@@ -1,14 +1,17 @@
 """Portable controls and repeatable device measurements for the existing solver."""
 from __future__ import annotations
 import hashlib
+from importlib import metadata
 import json
 from pathlib import Path
 import platform
 import statistics
 import subprocess
+import sys
 import time
 import numpy as np
 import torch
+import shapely
 
 from .block import Block
 from .block_generator import demo_experiment
@@ -162,7 +165,15 @@ def environment():
                            capture_output=True,text=True,timeout=10).stdout.strip()
     except (OSError,subprocess.TimeoutExpired):
         gpu=None
-    return {'python':platform.python_version(),'torch':torch.__version__,'cuda_runtime':torch.version.cuda,
+    packages = {}
+    for name in ('numpy', 'scipy', 'shapely', 'manifold3d', 'trimesh', 'matplotlib'):
+        try:
+            packages[name] = metadata.version(name)
+        except metadata.PackageNotFoundError:
+            packages[name] = None
+    return {'python':platform.python_version(),'python_executable':sys.executable,
+            'packages':packages,'geos':shapely.geos_version_string,
+            'torch':torch.__version__,'cuda_runtime':torch.version.cuda,
             'cuda_available':torch.cuda.is_available(),'nvidia_smi':gpu,'cpu':platform.processor(),
             'dtype':'float64','threads':torch.get_num_threads()}
 
@@ -260,7 +271,7 @@ def quality_benchmarks(folder, output, devices=('cpu','cuda'), seeds=(101,202), 
         baseline=np.asarray(case['reference_state']).reshape(-1,3)
         if not check_candidate(problem,baseline,accept)['accepted']:
             raise RuntimeError('Frozen baseline no longer verifies')
-        cfg=SearchConfig(seconds=seconds,seconds_per_n=seconds,device=device,seed=int(seed),threads=1,
+        cfg=SearchConfig(grid_seed='off', seconds=seconds,seconds_per_n=seconds,device=device,seed=int(seed),threads=1,
             batch_size=6,adam_steps=100,polish_iterations=80,iterations_per_n=40,**VARIANTS['combined'])
         # Same verified warm start, precision, budget and seed for each device.
         sync(device);started=time.perf_counter()

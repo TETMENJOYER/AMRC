@@ -122,7 +122,7 @@ class NonconvexTests(unittest.TestCase):
             p=Problem.from_region(region,1)
             seeds=shelf_seeds(p,limit=2,margin=0)
             self.assertTrue(any(len(q)==count and validate(p,p.denormalize(q))['accepted'] for q in seeds))
-            result=solve(p,SearchConfig(seconds=4,seconds_per_n=1,batch_size=2,adam_steps=10))
+            result=solve(p,SearchConfig(grid_seed='off', seconds=4,seconds_per_n=1,batch_size=2,adam_steps=10))
             self.assertEqual(result['n'],count)
             self.assertTrue(result['validation']['accepted'])
             self.assertFalse(result['optimality_proven'])
@@ -136,7 +136,7 @@ class NonconvexTests(unittest.TestCase):
             Problem.from_dict({**data,'vertices':[[0,0],[1,0],[0,1]]})
 
     def test_slab_pipeline_and_independent_verification_ignore_saved_region(self):
-        result=solve_slab(demo_experiment(),SearchConfig(seconds=4,seconds_per_n=1,batch_size=2,adam_steps=10),target_n=2)
+        result=solve_slab(demo_experiment(),SearchConfig(grid_seed='off', seconds=4,seconds_per_n=1,batch_size=2,adam_steps=10),target_n=2)
         self.assertEqual(result['n'],2)
         self.assertTrue(result['validation3d']['accepted'])
         result['problem']['geometry']=mapping(box(-1e6,-1e6,1e6,1e6))
@@ -151,7 +151,7 @@ class NonconvexTests(unittest.TestCase):
                 self.assertEqual(cli_main(['verify',str(path)]),2)
 
     def test_slab_verification_checks_pair_interiors_and_declared_count(self):
-        result=solve_slab(demo_experiment(),SearchConfig(seconds=4,batch_size=2,adam_steps=10),target_n=2)
+        result=solve_slab(demo_experiment(),SearchConfig(grid_seed='off', seconds=4,batch_size=2,adam_steps=10),target_n=2)
         result['state']=[[300,250,0],[300,250,0]]
         audit=verify_slab_result(result)
         self.assertFalse(audit['accepted'])
@@ -162,7 +162,7 @@ class NonconvexTests(unittest.TestCase):
 
     def test_additional_rejection_does_not_become_a_feasible_incumbent(self):
         p=Problem.from_region(l_shape(),1)
-        result=solve(p,SearchConfig(seconds=1,seconds_per_n=.2,batch_size=2,
+        result=solve(p,SearchConfig(grid_seed='off', seconds=1,seconds_per_n=.2,batch_size=2,
                      adam_steps=10,polish_iterations=10,iterations_per_n=1),target_n=1,
                      acceptance_check=lambda q: {'accepted':len(q)==0})
         self.assertEqual(result['n'],0)

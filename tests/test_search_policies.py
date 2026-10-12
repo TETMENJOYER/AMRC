@@ -44,7 +44,7 @@ class SearchPolicyTests(unittest.TestCase):
               patch("rockcut.solver.fill_gaps", side_effect=lambda p, q, deadline: q),
               patch("rockcut.solver.insert_one", return_value=np.array([[10., 0., 0.]])),
               patch("rockcut.solver.TabuMemory", wraps=TabuMemory) as memory):
-            result = solve(problem, SearchConfig(**options), target_n=1)
+            result = solve(problem, SearchConfig(grid_seed='off', **options), target_n=1)
             memory_count = memory.call_count
         return result, memory_count
 
@@ -76,7 +76,7 @@ class SearchPolicyTests(unittest.TestCase):
                                              retry_failed_n=True)
         self.assertEqual(local.calls, 3)
         self.assertEqual(result["n"], 0)
-        self.assertEqual(result["stop_reason"], "search_budget_exhausted")
+        self.assertEqual(result["stop_reason"], "global_budget_exhausted")
         self.assertEqual(result["area_upper_bound"], 1)
         self.assertLessEqual(result["elapsed_seconds"], 0.35)
 

@@ -106,7 +106,7 @@ class MeshImportTests(unittest.TestCase):
                 'block':{'schema_version':1,'units':'mm','base':mesh_payload(mesh)},
                 'product':{'short_side':1,'thickness':3,'aspect_ratio':3},
                 'directions':[[0,0,1]]}
-        result=solve_block(source,BlockSearchConfig(seconds=2,refine_pairs=0,
+        result=solve_block(source,BlockSearchConfig(grid_seed='off', seconds=2,refine_pairs=0,
                             coarse_seconds_per_slab=.3,fine_seconds_per_slab=.3))
         self.assertEqual(result['n_total'],16)
         self.assertAlmostEqual(result['yield_by_volume'],1)

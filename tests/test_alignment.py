@@ -119,7 +119,7 @@ class AlignmentTests(unittest.TestCase):
         self.assertEqual(saved, before)
 
     def test_solver_second_stage_runs_after_count_search(self):
-        result = solve(self.problem, SearchConfig(seconds=.1, alignment_seconds=1),
+        result = solve(self.problem, SearchConfig(grid_seed='off', seconds=.1, alignment_seconds=1),
                        target_n=4, initial_state=self.state)
         self.assertEqual(result['n'], 4)
         self.assertTrue(result['alignment']['count_preserved'])
@@ -133,7 +133,7 @@ class AlignmentTests(unittest.TestCase):
         inputs = {'schema_version': 1, 'kind': 'block_cutting_problem',
             'block': {'schema_version': 1, 'units': 'mm', 'base': {'type': 'box', 'size': [6, 2, 7]}},
             'product': {'short_side': 1, 'thickness': 3}, 'directions': [[0, 0, 1]]}
-        original = solve_block(inputs, BlockSearchConfig(seconds=2, refine_pairs=0,
+        original = solve_block(inputs, BlockSearchConfig(grid_seed='off', seconds=2, refine_pairs=0,
                                coarse_seconds_per_slab=.1, fine_seconds_per_slab=.1, alignment_seconds=.1))
         self.assertEqual(original['history'][-1]['event'], 'block_finished')
         self.assertTrue(original['alignment']['count_preserved'])
@@ -149,7 +149,7 @@ class AlignmentTests(unittest.TestCase):
     def test_cli_align_exports_recheckable_result(self):
         from rockcut.cli import main
         from rockcut.verify import validate
-        result = solve(self.problem, SearchConfig(seconds=.1), target_n=4, initial_state=self.state)
+        result = solve(self.problem, SearchConfig(grid_seed='off', seconds=.1), target_n=4, initial_state=self.state)
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             (root/'input.json').write_text(json.dumps(result), encoding='utf-8')
@@ -360,7 +360,7 @@ class ConvergenceTests(unittest.TestCase):
         inputs = {'schema_version': 1, 'kind': 'block_cutting_problem',
             'block': {'schema_version': 1, 'units': 'mm', 'base': {'type': 'box', 'size': [6, 2, 7]}},
             'product': {'short_side': 1, 'thickness': 3}, 'directions': [[0, 0, 1]]}
-        source = solve_block(inputs, BlockSearchConfig(seconds=2, refine_pairs=0))
+        source = solve_block(inputs, BlockSearchConfig(grid_seed='off', seconds=2, refine_pairs=0))
         result = align_block_result(source, AlignmentConfig(seconds=None))
         self.assertEqual(result['n_total'], source['n_total'])
         self.assertEqual(result['alignment']['slabs_not_processed'], 0)

@@ -24,7 +24,7 @@ class MachineTests(unittest.TestCase):
         torch.set_num_threads(1)
         analytic=machine_input()
         analytic['block']['base']['size']=[6,6.2,2.2]
-        cls.result=solve_block(analytic,BlockSearchConfig(seconds=4,refine_pairs=0,
+        cls.result=solve_block(analytic,BlockSearchConfig(grid_seed='off', seconds=4,refine_pairs=0,
                               coarse_seconds_per_slab=.2,fine_seconds_per_slab=.2))
 
     def test_center_of_mass_and_known_support_margin(self):
@@ -119,7 +119,7 @@ class MachineTests(unittest.TestCase):
 
     def test_continuous_yaw_refinement_keeps_one_stable_base(self):
         d=machine_input();d['machine'].pop('yaw_angles_degrees')
-        r=solve_block(d,BlockSearchConfig(seconds=3,direction_count=1,refine_pairs=1,
+        r=solve_block(d,BlockSearchConfig(grid_seed='off', seconds=3,direction_count=1,refine_pairs=1,
                                         coarse_seconds_per_slab=.1,fine_seconds_per_slab=.1))
         self.assertTrue(r['validation']['accepted'])
         for c in r['candidates']:

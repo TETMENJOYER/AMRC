@@ -191,7 +191,7 @@ class OptimizationTests(unittest.TestCase):
 
     def test_known_tiling_and_export_roundtrip(self):
         p = Problem([[0, 0], [6, 0], [6, 2], [0, 2]], 1)
-        result = solve(p, SearchConfig(seconds=4, seconds_per_n=1, batch_size=2, adam_steps=10))
+        result = solve(p, SearchConfig(grid_seed='off', seconds=4, seconds_per_n=1, batch_size=2, adam_steps=10))
         self.assertEqual(result["n"], 4)
         self.assertTrue(result["area_bound_reached"])
         self.assertFalse(result["optimality_proven"])
@@ -199,25 +199,28 @@ class OptimizationTests(unittest.TestCase):
         self.assertTrue(validate(Problem.from_dict(loaded["problem"]), loaded["state"])["accepted"])
 
     def test_fixed_count_zero(self):
-        result = solve(square(), SearchConfig(seconds=1), target_n=0)
+        result = solve(square(), SearchConfig(grid_seed='off', seconds=1), target_n=0)
         self.assertEqual(result["n"], 0)
         self.assertEqual(result["stop_reason"], "target_reached")
 
     def test_invalid_configuration(self):
         with self.assertRaises(ValueError):
-            SearchConfig(seconds=-1)
+            SearchConfig(grid_seed='off', seconds=-1)
         with self.assertRaises(ValueError):
             solve(square(), target_n=1000)
 
     def test_failed_search_does_not_claim_impossibility_or_reduce_bound(self):
         p = Problem([[0, 0], [20, 0], [20, 0.5], [0, 0.5]], 1)
-        result = solve(p, SearchConfig(seconds=0.5, seconds_per_n=0.3,
+        result = solve(p, SearchConfig(grid_seed='off', seconds=0.5, seconds_per_n=0.3,
                                       batch_size=2, adam_steps=10, polish_iterations=10), target_n=1)
         self.assertEqual(result["n"], 0)
         self.assertEqual(result["area_upper_bound"], 3)
         self.assertFalse(result["optimality_proven"])
         self.assertTrue(result["validation"]["accepted"])
-        self.assertEqual(result["stop_reason"], "search_budget_exhausted")
+        self.assertIn(result["stop_reason"], {
+            "global_budget_exhausted", "first_failed_n_attempt_budget_exhausted",
+            "first_failed_n_iteration_limit", "first_failed_n_initialization_failed"})
+        self.assertGreaterEqual(result['stop_detail']['remaining_seconds'], 0)
 
     def test_cli_rejects_tampered_coordinates_despite_saved_accepted_flag(self):
         data = {"problem": square().to_dict(), "n": 2, "angle_unit": "radians",

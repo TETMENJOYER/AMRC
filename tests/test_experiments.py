@@ -75,7 +75,7 @@ class ExperimentalGeometryTests(unittest.TestCase):
         p = Problem([[0, 0], [6, 0], [6, 2], [0, 2]], 1)
         for variant, settings in VARIANTS.items():
             with self.subTest(variant=variant):
-                r = solve(p, SearchConfig(seconds=3, seconds_per_n=1, **settings))
+                r = solve(p, SearchConfig(grid_seed='off', seconds=3, seconds_per_n=1, **settings))
                 self.assertEqual(r["n"], 4)
                 self.assertTrue(validate(p, r["state"])["accepted"])
 

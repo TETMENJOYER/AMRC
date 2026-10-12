@@ -122,7 +122,7 @@ class SeedSubsetTests(unittest.TestCase):
     def test_solver_retains_checked_subset_as_warm_start(self):
         accept=lambda q:verify_layout(self.block,self.plan.specs[0],1,q,slab_local=self.plan.pieces[0])
         state=np.vstack((self.state,[20,.5,0]))
-        result=solve(self.problem,SearchConfig(seconds=.01),initial_state=state,acceptance_check=accept)
+        result=solve(self.problem,SearchConfig(grid_seed='off', seconds=.01),initial_state=state,acceptance_check=accept)
         self.assertGreaterEqual(result['n'],3)
         self.assertTrue(result['validation']['additional_check']['accepted'])
         self.assertTrue(any(e.get('event')=='seed_subset' and e['retained_n']==3 for e in result['history']))
@@ -134,7 +134,7 @@ class SeedSubsetTests(unittest.TestCase):
         seed=np.array([[1.5,.5,0],[4.5,.5,0],[1.5,1.5,0],[100,100,0]])
         with patch('rockcut.block_solver.shelf_seeds',side_effect=lambda p,**kwargs:[p.normalize(seed)]), \
              patch('rockcut.block_solver.fill_gaps',side_effect=lambda p,q,deadline:q):
-            result=solve_block(source,BlockSearchConfig(seconds=1,refine_pairs=0,
+            result=solve_block(source,BlockSearchConfig(grid_seed='off', seconds=1,refine_pairs=0,
                 coarse_seconds_per_slab=.1,fine_seconds_per_slab=.01))
         self.assertTrue(result['validation']['accepted'])
         self.assertGreaterEqual(result['n_total'],6)

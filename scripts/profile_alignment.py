@@ -286,8 +286,17 @@ def main():
         input_hash = digest(input_path)
         source = {'problem': case['problem'], 'state': case['reference_state'],
                   'n': case['reference_n'], 'angle_unit': 'radians'}
-        source_copy = copy.deepcopy(source)
         problem = Problem.from_dict(source['problem'])
+        # Frozen controls contain geometry, not a solver report. Supply the
+        # physical-area fields required by the normal export. No search runs
+        # here; measured alignment times live in the measurement record.
+        used_area = source['n'] * problem.product_area
+        source.update(area_upper_bound=problem.area_upper_bound,
+                      utilization=used_area / problem.area,
+                      unused_area=problem.area - used_area,
+                      elapsed_seconds=0., search_elapsed_seconds=0.,
+                      optimality_proven=False)
+        source_copy = copy.deepcopy(source)
         started = time.perf_counter()
         block, spec, piece = source_context(case, Path('benchmarks/performance'), {})
         restoration = time.perf_counter()-started

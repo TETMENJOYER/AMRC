@@ -57,7 +57,7 @@ def reference_layout(problem: Problem) -> np.ndarray:
 
 
 def run_job(job: dict) -> dict:
-    cfg = SearchConfig(seed=job["seed"], seconds=job["seconds"],
+    cfg = SearchConfig(grid_seed='off', seed=job["seed"], seconds=job["seconds"],
                        seconds_per_n=job.get("seconds_per_n", job["seconds"]),
                        iterations_per_n=10000, device="cpu", threads=1, **VARIANTS[job["variant"]])
     result = solve(Problem.from_dict(job["case"]), cfg)
@@ -274,7 +274,7 @@ def main(argv=None) -> int:
                 "machine": {"cpu": platform.processor(), "logical_cpus": os.cpu_count(), "platform": platform.platform()},
                 "versions": {"python": platform.python_version(),
                              **{name: version(name) for name in ("torch", "numpy", "scipy", "shapely", "matplotlib")}},
-                "common_config": SearchConfig(seconds=args.seconds, seconds_per_n=seconds_per_n, iterations_per_n=10000).__dict__}
+                "common_config": SearchConfig(grid_seed='off', seconds=args.seconds, seconds_per_n=seconds_per_n, iterations_per_n=10000).__dict__}
     manifest_path = args.output / "manifest.json"
     if manifest_path.exists():
         if not args.resume:

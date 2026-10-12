@@ -15,6 +15,7 @@ from .local import LocalOptimizer, resolve_device
 from .seeds import shelf_seeds, fill_gaps, insert_one, perturb, random_layout, destroy_repair
 from .tabu import TabuMemory
 from .verify import check_candidate, verified_subset
+from .grid import rigid_grid_candidates
 
 
 @dataclass
@@ -42,8 +43,14 @@ class SearchConfig:
     alignment_seconds: float | None = 0.
     alignment_stop_mode: str = 'convergence'
     alignment_method_policy: str = 'adaptive'
+    grid_seed: str = 'rigid'
+    grid_seconds: float = 1.
 
     def __post_init__(self):
+        if self.grid_seed not in ('off', 'rigid'):
+            raise ValueError('grid_seed must be off or rigid')
+        if not math.isfinite(self.grid_seconds) or self.grid_seconds <= 0:
+            raise ValueError('grid_seconds must be finite and positive')
         if self.alignment_seconds is not None and (not math.isfinite(self.alignment_seconds) or self.alignment_seconds < 0):
             raise ValueError('alignment_seconds must be finite and nonnegative')
         if self.alignment_stop_mode not in ('convergence', 'time'):
@@ -103,6 +110,11 @@ def solve(problem: Problem, config: SearchConfig | None = None,
         return check_candidate(problem, physical, acceptance_check)
     history: list[dict] = []
     best = np.empty((0, 3))
+    # Physical coordinates accompany the SAME best layout in opt-in grid mode.
+    # Keep the independently checked warm start exact, avoiding normalize/denormalize drift.
+    best_physical = np.empty((0, 3))
+    best_source = 'empty'
+    initial_verified_n = 0
     best_check = check_layout(problem.denormalize(best))
     best_partial = None
     attempts = []
@@ -126,12 +138,14 @@ def solve(problem: Problem, config: SearchConfig | None = None,
 
     emit("start", device=device, area_upper_bound=problem.area_upper_bound)
     if initial_state is not None:
-        warm = np.asarray(initial_state, dtype=float)
+        warm = np.array(initial_state, dtype=float, copy=True)
         if warm.size == 0:
             warm = np.empty((0, 3))
         if warm.ndim != 2 or warm.shape[1] != 3 or not np.isfinite(warm).all():
             raise ValueError("initial_state must be a finite physical (N, 3) array")
         if target_n is not None:
+            if cfg.grid_seed == 'rigid' and target_n < len(warm):
+                raise ValueError('Grid fallback target_n must not discard the previous warm start')
             warm = warm[:target_n]
         original_count = len(warm)
         warm, check = verified_subset(warm, check_layout)
@@ -139,8 +153,38 @@ def solve(problem: Problem, config: SearchConfig | None = None,
             emit("seed_subset", source="warm_start", original_n=original_count, retained_n=len(warm))
         if check["accepted"] and len(warm) > len(best):
             best, best_check = problem.normalize(warm), check
+            best_physical, best_source = warm.copy(), 'verified_warm_start'
             emit("feasible", n=len(best), source="verified_warm_start")
+        initial_verified_n = len(best)
     seed_deadline = min(deadline, started + min(12, cfg.seconds * 0.15))
+    grid_info = None
+    if cfg.grid_seed == 'rigid':
+        grid_started = time.monotonic()
+        allocated = max(0., min(cfg.grid_seconds, cfg.seconds*.075, seed_deadline-grid_started))
+        grid_deadline = min(seed_deadline, grid_started+allocated)
+        grid_rows = []
+        for physical_seed, parameters in rigid_grid_candidates(problem, grid_deadline):
+            if target_n is not None:
+                physical_seed = physical_seed[:target_n]
+            original_count = len(physical_seed)
+            audit_started = time.monotonic()
+            physical_seed, check = verified_subset(physical_seed, check_layout)
+            row = {**parameters, 'original_n': original_count, 'verified_n': len(physical_seed),
+                   'audit_seconds': time.monotonic()-audit_started, 'accepted': bool(check['accepted'])}
+            grid_rows.append(row)
+            if check['accepted'] and len(physical_seed) > len(best):
+                best, best_check = problem.normalize(physical_seed), check
+                best_physical, best_source = physical_seed.copy(), 'rigid_grid'
+                emit('feasible', n=len(best), source='rigid_grid', **parameters)
+            if time.monotonic() >= grid_deadline:
+                break
+        grid_finished = time.monotonic()
+        grid_info = {'requested_seconds': cfg.grid_seconds, 'allocated_seconds': allocated,
+            'elapsed_seconds': grid_finished-grid_started, 'candidates': grid_rows,
+            'best_grid_n': max((r['verified_n'] for r in grid_rows), default=0),
+            'overrun_seconds': max(0., grid_finished-grid_deadline),
+            'stop_reason': 'grid_quota_exhausted' if grid_finished>=grid_deadline else 'grid_catalog_completed'}
+        emit('grid_initialization_finished', n=len(best), **{k:v for k,v in grid_info.items() if k!='candidates'})
     seeds = (shelf_seeds(problem, limit=2, deadline=seed_deadline, margin=0)
              + shelf_seeds(problem, limit=2, deadline=seed_deadline, margin=cfg.search_margin))
     for seed in seeds[:4]:
@@ -155,6 +199,7 @@ def solve(problem: Problem, config: SearchConfig | None = None,
             emit("seed_subset", source="shelf_initialization", original_n=original_count, retained_n=len(seed))
         if check["accepted"] and len(seed) > len(best):
             best, best_check = seed.copy(), check
+            best_physical, best_source = physical.copy(), 'shelf_initialization'
             emit("feasible", n=len(best), source="shelf_initialization")
     catalog = []
     if cfg.diverse_starts:
@@ -168,6 +213,7 @@ def solve(problem: Problem, config: SearchConfig | None = None,
     tabu_clock = 0
     count_record, count_record_score = None, math.inf
     n_attempts = 0
+    failed_attempt_reason = None
     while n <= problem.area_upper_bound and time.monotonic() < deadline:
         if target_n is not None and len(best) == target_n:
             break
@@ -211,6 +257,9 @@ def solve(problem: Problem, config: SearchConfig | None = None,
         if not initial:
             attempts.append({"n": n, "status": "not_found_within_budget", "iterations": 0,
                              "attempt_for_n": n_attempts, "seconds": time.monotonic() - n_started})
+            failed_attempt_reason = ("attempt_budget_exhausted"
+                                     if n_started + attempts[-1]["seconds"] >= n_deadline
+                                     else "initialization_failed")
             if retry_count(n):
                 continue
             break
@@ -227,8 +276,10 @@ def solve(problem: Problem, config: SearchConfig | None = None,
         total_tabu = 0
         completed_iterations = 0
         iteration = -1
+        attempt_stop = "iteration_limit"
         for iteration in range(cfg.iterations_per_n):
             if time.monotonic() >= n_deadline:
+                attempt_stop = "attempt_budget_exhausted"
                 break
             if cfg.anneal_margin:
                 # Reach contact geometry during the last quarter of an attempt.
@@ -306,6 +357,7 @@ def solve(problem: Problem, config: SearchConfig | None = None,
             timings["selection_and_tabu"] += time.monotonic() - phase_started
             if found:
                 best, best_check = found
+                best_physical, best_source = problem.denormalize(best).copy(), 'tabu_gradient'
                 emit("feasible", n=n, source="tabu_gradient", iteration=iteration)
                 break
             improved = record_score < old_record_score - 1e-10
@@ -338,6 +390,7 @@ def solve(problem: Problem, config: SearchConfig | None = None,
                          "attempt_for_n": n_attempts, "final_search_margin": local.margin,
                          "seconds": time.monotonic() - n_started})
         if not found:
+            failed_attempt_reason = attempt_stop
             count_record, count_record_score = record.copy(), record_score
             best_partial = {"n": n, "state": problem.denormalize(record).tolist(),
                             "area_penalty": record_score,
@@ -346,10 +399,25 @@ def solve(problem: Problem, config: SearchConfig | None = None,
                 continue
             break
         best_partial = None
+        failed_attempt_reason = None
         if target_n is not None:
             break
         n += 1
-    physical = problem.denormalize(best)
+    # Diagnose the search's actual exit before independent verification or
+    # alignment can consume time beyond its deadline. Failed attempts retain
+    # their historical status and never imply that N is geometrically impossible.
+    search_finished = time.monotonic()
+    reaches_bound = len(best) == problem.area_upper_bound
+    target_reached = target_n is not None and len(best) == target_n
+    stop_reason = ("area_upper_bound_reached" if reaches_bound else
+                   "target_reached" if target_reached else
+                   "global_budget_exhausted" if search_finished >= deadline else
+                   "first_failed_n_" + failed_attempt_reason)
+    stop_detail = {"failed_n": (attempts[-1]["n"] if failed_attempt_reason is not None else None),
+                   "failure_reason": failed_attempt_reason,
+                   "remaining_seconds": max(0., deadline - search_finished),
+                   "search_phase_elapsed_seconds": search_finished - started}
+    physical = best_physical.copy() if cfg.grid_seed == 'rigid' else problem.denormalize(best)
     # Rebuild and verify independently once more; only this check authorizes output.
     best_check = check_layout(physical)
     if not best_check["accepted"]:
@@ -365,14 +433,11 @@ def solve(problem: Problem, config: SearchConfig | None = None,
         physical = np.asarray(aligned['state'], dtype=float).reshape(-1, 3)
         best_check, alignment = aligned['validation'], aligned['alignment']
         timings['alignment'] = alignment['elapsed_seconds']
-    reaches_bound = len(best) == problem.area_upper_bound
-    stop_reason = ("area_upper_bound_reached" if reaches_bound else
-                   "target_reached" if target_n is not None and len(best) == target_n else
-                   "search_budget_exhausted")
     emit("finished", n=len(best), stop_reason=stop_reason)
     return {
         "schema_version": 1, "problem": problem.to_dict(), "config": asdict(cfg),
         "device_used": device, "target_n": target_n, "stop_reason": stop_reason,
+        "stop_detail": stop_detail,
         "n": len(best), "state": physical.tolist(), "angle_unit": "radians",
         "area_upper_bound": problem.area_upper_bound,
         "count_gap_to_area_bound": problem.area_upper_bound - len(best),
@@ -389,6 +454,10 @@ def solve(problem: Problem, config: SearchConfig | None = None,
         "elapsed_seconds": time.monotonic() - started, "search_elapsed_seconds": search_elapsed, "history": history,
         "phase_seconds": timings, "search_counters": counters,
         **({'alignment': alignment} if alignment is not None else {}),
+        **({'grid_initialization': grid_info, 'best_retention': {
+            'before_n': initial_verified_n, 'after_n': len(best), 'source': best_source,
+            'returned_reason': stop_reason, 'count_preserved': len(best)>=initial_verified_n}}
+           if cfg.grid_seed == 'rigid' else {}),
         "versions": {"python": platform.python_version(), "torch": torch.__version__,
                      "numpy": np.__version__, "scipy": scipy.__version__,
                      "shapely": shapely.__version__, "geos": shapely.geos_version_string},

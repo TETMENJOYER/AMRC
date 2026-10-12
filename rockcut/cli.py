@@ -30,6 +30,10 @@ def main(argv=None) -> int:
     search.add_argument('--alignment-method-policy', choices=['always', 'adaptive'], default='adaptive',
                         help='Adaptive gradient pauses, or the previous always-run policy')
     search.add_argument('--alignment-no-time-limit', action='store_true', help='Stop on plateau/round limit without a time cap')
+    search.add_argument('--grid-seed',choices=['off','rigid'],default='rigid',
+                        help='Rigid grid with one angle and two shared shifts (default: rigid); off disables it; keeps verified best')
+    search.add_argument('--grid-seconds',type=float,default=1.,
+                        help='Maximum grid initialization quota inside the existing total budget')
     search.add_argument("--target-n", type=int, help="Attempt exactly this count")
     search.add_argument("--variant", choices=["baseline", "diverse", "repair", "adaptive", "polish_all", "combined",
                                              "restarts", "anneal"],
@@ -44,6 +48,12 @@ def main(argv=None) -> int:
     block.add_argument('--slab-seconds',type=float,default=2)
     block.add_argument('--fine-plans',type=int,default=2)
     block.add_argument('--refine-pairs',type=int,default=2)
+    block.add_argument('--quantity-pass',choices=['off','long','retry'],default='off',
+                       help='Optional N+1 pass on the selected frozen plan before alignment')
+    block.add_argument('--quantity-reserve-seconds',type=float,default=0.,
+                       help='Reserve inside --seconds, not extra time; requires quantity-pass')
+    block.add_argument('--quantity-slab-seconds',type=float,default=12.)
+    block.add_argument('--quantity-attempt-seconds',type=float,default=3.)
     check = sub.add_parser("verify", help="Independently recheck an exported JSON result")
     check.add_argument("result", type=Path)
     align = sub.add_parser('align', help='Reorganize a saved layout without rerunning count search')
@@ -121,6 +131,7 @@ def main(argv=None) -> int:
                            alignment_seconds=None if args.alignment_no_time_limit else args.alignment_seconds,
                            alignment_stop_mode=args.alignment_stop,
                            alignment_method_policy=args.alignment_method_policy,
+                           grid_seed=args.grid_seed,grid_seconds=args.grid_seconds,
                            **VARIANTS[args.variant])
         def progress(event):
             print(json.dumps(event, ensure_ascii=False), flush=True)
@@ -137,7 +148,10 @@ def main(argv=None) -> int:
                 batch_size=args.batch_size,adam_steps=args.adam_steps,polish_iterations=args.polish_iterations,
                 iterations_per_n=args.iterations_per_n,variant=args.variant,device=args.device,threads=args.threads,
                 alignment_seconds=None if args.alignment_no_time_limit else args.alignment_seconds,
-                alignment_stop_mode=args.alignment_stop, alignment_method_policy=args.alignment_method_policy)
+                alignment_stop_mode=args.alignment_stop, alignment_method_policy=args.alignment_method_policy,
+                quantity_pass=args.quantity_pass,quantity_reserve_seconds=args.quantity_reserve_seconds,
+                quantity_slab_seconds=args.quantity_slab_seconds,quantity_attempt_seconds=args.quantity_attempt_seconds,
+                grid_seed=args.grid_seed,grid_seconds=args.grid_seconds)
             result=solve_block(inputs,block_cfg,progress)
             report=write_block_report(result,args.output)
             print(f'Report: {report.resolve()}')
